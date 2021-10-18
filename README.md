@@ -31,6 +31,8 @@ networks: {
 
 
 # Staking Explained
+You can watch a walkthrough video [here](https://youtu.be/kauX-K5YDi0).
+
 ### The goal:
 To distribute tokens to the stakers. For the first iteration, no external agent or entity will be updating the reward emission rate. Therefore, the emission rate will be fixed per epoch and distributed to stakeholders based on how many tokens they have staked plus their accumulated interest. One epoch is one block.
 
