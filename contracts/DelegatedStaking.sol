@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 contract DelegatedStaking is Ownable, Initializable  {
-    uint256 divider; // used for scaling the rates
+    uint256 constant divider = 10**18; // 18 decimals used for scaling the rates
     uint128 validatorCoolDown; // how many epochs until validator unstaking is unlocked
     uint128 delegatorCoolDown; // how many epochs until delegator unstaking is unlocked
     uint128 maxCapMultiplier;
@@ -63,7 +63,6 @@ contract DelegatedStaking is Ownable, Initializable  {
     // this is used to have the contract upgradeable
     function initialize(uint128 minStakedRequired) public initializer {
         validatorMinStakedRequired = minStakedRequired;
-        divider = 10**18; // 18 decimals
         validatorCoolDown = 180*6646; // ~ 6 months
         delegatorCoolDown = 28*6646; // ~ 28 days
         maxCapMultiplier = 10;

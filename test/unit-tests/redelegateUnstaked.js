@@ -22,7 +22,7 @@ describe("Transfer Unstaked", function () {
       let amountIn = oneToken.mul(7000)
       await contract.connect(delegator1).unstake(0, amountIn)
       await mineBlocks(100)
-      expect(await contract.connect(delegator1).redelegateUnstaked(amountIn, 0, 1, 0)).to.emit(contract,"TransferedUnstake").withArgs(0, 1, delegator1.address, amountIn.toString(), 0)
+      expect(await contract.connect(delegator1).redelegateUnstaked(amountIn, 0, 1, 0)).to.emit(contract,"TransferredUnstake").withArgs(0, 1, delegator1.address, amountIn.toString(), 0)
     });
 
     it("Should redelegate partially", async function () {
@@ -40,9 +40,9 @@ describe("Transfer Unstaked", function () {
       let amountIn = oneToken.mul(7000)
       await contract.connect(delegator1).unstake(0, amountIn)
 
-      expect(await contract.connect(delegator1).redelegateUnstaked(amountIn.sub(oneToken.mul(1)), 0, 1, 0)).to.emit(contract, "TransferedUnstake").withArgs(0, 1,  delegator1.address, amountIn.sub(oneToken.mul(1)).toString(), 0)
+      expect(await contract.connect(delegator1).redelegateUnstaked(amountIn.sub(oneToken.mul(1)), 0, 1, 0)).to.emit(contract, "TransferredUnstake").withArgs(0, 1,  delegator1.address, amountIn.sub(oneToken.mul(1)).toString(), 0)
       await mineBlocks(100)
-      expect(await contract.connect(delegator1).redelegateUnstaked(oneToken.mul(1), 0, 1, 0)).to.emit(contract, "TransferedUnstake").withArgs(0, 1, delegator1.address,oneToken.mul(1).toString(), 0)
+      expect(await contract.connect(delegator1).redelegateUnstaked(oneToken.mul(1), 0, 1, 0)).to.emit(contract, "TransferredUnstake").withArgs(0, 1, delegator1.address,oneToken.mul(1).toString(), 0)
  });
 
 
