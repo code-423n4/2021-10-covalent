@@ -58,6 +58,7 @@ contract DelegatedStaking is Ownable, Initializable  {
     event EmissionRateChanged(uint128 newRate);
     event ValidatorCommissionRateChanged(uint128 indexed validatorId, uint128 newRate);
     event ValidatorMinStakedRequiredChanged(uint128 amount);
+    event Initialized(uint128 minStakedRequired, uint128 validatorCoolDown, uint128 delegatorCoolDown, uint128 maxCapMultiplier, uint128 allocatedTokensPerEpoch, uint128 globalExchangeRate);
 
     // this is used to have the contract upgradeable
     function initialize(uint128 minStakedRequired) public initializer {
@@ -69,6 +70,7 @@ contract DelegatedStaking is Ownable, Initializable  {
         allocatedTokensPerEpoch = 1*10**18; // should never be 0
         globalExchangeRate = 10**18; // 1 to 1
         CQT = IERC20(0xD417144312DbF50465b1C641d016962017Ef6240);
+        emit Initialized(minStakedRequired, validatorCoolDown, delegatorCoolDown, maxCapMultiplier, allocatedTokensPerEpoch, globalExchangeRate);
     }
     // used to transfer CQT from delegators, validators and the owner to the contract
     function transferToContract(address from, uint128 amount) internal {
