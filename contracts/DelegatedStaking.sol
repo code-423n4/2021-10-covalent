@@ -101,9 +101,9 @@ contract DelegatedStaking is Ownable, Initializable  {
     // transfer reward CQT from the contract to the owner, must change end epoch and not allow transfer from the past
     function takeOutRewardTokens(uint128 amount) public onlyOwner {
         require(amount > 0, "Amount is 0");
-        uint128 currentEpoch = uint128(block.number);
-        uint128 epochs = amount / allocatedTokensPerEpoch;
         if (endEpoch != 0){
+            uint128 currentEpoch = uint128(block.number);
+            uint128 epochs = amount / allocatedTokensPerEpoch;
             require(endEpoch - epochs > currentEpoch, "Cannot takeout rewards from past");
             endEpoch = endEpoch - epochs;
         }
