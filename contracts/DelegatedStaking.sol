@@ -343,11 +343,12 @@ contract DelegatedStaking is Ownable, Initializable  {
 
     // add new validator instance
     function addValidator(address validator, address operator, uint128 commissionRate) public onlyOwner {
-        validators[validatorsN]._address = validator;
-        validators[validatorsN].operator = operator;
-        validators[validatorsN].commissionRate = commissionRate;
-        emit ValidatorAdded(validatorsN, validator, operator);
-        validatorsN +=1;
+        uint128 N = validatorsN;
+        validators[N]._address = validator;
+        validators[N].operator = operator;
+        validators[N].commissionRate = commissionRate;
+        emit ValidatorAdded(N, validator, operator);
+        validatorsN += 1;
     }
 
     // can only be called by the owner or the validator, disabling will allow validator to fully unstake
