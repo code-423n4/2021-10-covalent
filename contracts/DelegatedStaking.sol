@@ -171,11 +171,12 @@ contract DelegatedStaking is Ownable, Initializable  {
     function _stake(uint128 validatorId, uint128 amount, bool withTransfer) internal {
         require(amount >= divider, "Amount must be at least 1 token");
         require(validatorId < validatorsN, "Invalid validator");
+        require(validators[validatorId].disabledEpoch == 0, "Validator is disabled");
         // if this is the first stake, then set the end epoch
         if (endEpoch == 0)
             endEpoch = uint128(block.number) + rewardsLocked / allocatedTokensPerEpoch;
         require(endEpoch > block.number, "Program ended");
-        require(validators[validatorId].disabledEpoch == 0, "Validator is disabled");
+
         updateGlobalExchangeRate();
         Validator storage v = validators[validatorId];
         updateValidator(v);
