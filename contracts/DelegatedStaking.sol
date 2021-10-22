@@ -54,7 +54,7 @@ contract DelegatedStaking is Ownable, Initializable  {
     event CommissionRewardRedeemed(uint128 indexed validatorId, address indexed beneficiary, uint128 amount);
     event AllocatedTokensTaken(uint128 amount);
     event MaxCapMultiplierChanged(uint128 amount);
-    event TransferedUnstake(uint128 indexed oldValidatorId, uint128 indexed newValidatorId, address indexed delegator, uint128 amount, uint128 unstakingId);
+    event TransferredUnstake(uint128 indexed oldValidatorId, uint128 indexed newValidatorId, address indexed delegator, uint128 amount, uint128 unstakingId);
     event EmissionRateChanged(uint128 newRate);
     event ValidatorCommissionRateChanged(uint128 indexed validatorId, uint128 newRate);
     event ValidatorMinStakedRequiredChanged(uint128 amount);
@@ -301,7 +301,7 @@ contract DelegatedStaking is Ownable, Initializable  {
         }
     }
 
-    // if validator calls redeem rewards, first tokens paid from comissions will be redeemed and then regular rewards
+    // if validator calls redeem rewards, first tokens paid from commissions will be redeemed and then regular rewards
     function redeemRewards( uint128 validatorId, address beneficiary, uint128 amount) public {
         require(beneficiary!=address(0x0), "Invalid beneficiary");
         require(amount != 0, "Cannot redeem 0 tokens");
@@ -373,7 +373,7 @@ contract DelegatedStaking is Ownable, Initializable  {
             updateGlobalExchangeRate();
             // get number of epochs from now to the end epoch
             uint128 epochs = endEpoch > uint128(block.number) ? endEpoch - uint128(block.number) : 0;
-            // calclate how much rewards would be distribited with the old emission rate
+            // calculate how much rewards would be distributed with the old emission rate
             uint128 futureRewards = allocatedTokensPerEpoch * epochs;
             // calculate how many epochs will be covered
             uint128 addEpochs = futureRewards/amount;
@@ -391,7 +391,7 @@ contract DelegatedStaking is Ownable, Initializable  {
         emit MaxCapMultiplierChanged(amount);
     }
 
-    // only owner can change comission rate
+    // only owner can change commission rate
     function setValidatorCommissionRate(uint128 amount, uint128 validatorId) public onlyOwner {
         require(amount < divider, "Rate must be less than 100%");
         updateGlobalExchangeRate();
@@ -418,7 +418,7 @@ contract DelegatedStaking is Ownable, Initializable  {
         // set cool down end to 0 to release gas if new unstaking amount is 0
         if(us.amount == 0)
             us.coolDownEnd = 0;
-        emit TransferedUnstake(oldValidatorId, newValidatorId, msg.sender, amount, unstakingId);
+        emit TransferredUnstake(oldValidatorId, newValidatorId, msg.sender, amount, unstakingId);
     }
 
     // transfer out unlocked unstaked tokens back to the delegator
