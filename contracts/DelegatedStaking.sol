@@ -422,8 +422,8 @@ contract DelegatedStaking is Ownable, Initializable  {
     }
 
     // transfer out unlocked unstaked tokens back to the delegator
-    function transferUnstakedOut(uint128 amount, uint128 validatorId, uint128 stakingId) public {
-        Unstaking storage us = validators[validatorId].unstakings[msg.sender][stakingId];
+    function transferUnstakedOut(uint128 amount, uint128 validatorId, uint128 unstakingId) public {
+        Unstaking storage us = validators[validatorId].unstakings[msg.sender][unstakingId];
         require( uint128(block.number) > us.coolDownEnd, "Cooldown period has not ended" );
         require(us.amount >= amount, "Amount is too high");
         transferFromContract(msg.sender, amount);
