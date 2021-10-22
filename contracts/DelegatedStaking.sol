@@ -221,13 +221,12 @@ contract DelegatedStaking is Ownable, Initializable  {
         Staking storage s = v.stakings[msg.sender];
         require(s.staked >= amount, "Staked is less than amount provided");
         bool isValidator = msg.sender == v._address;
+        updateGlobalExchangeRate();
+        updateValidator(v);
         // only update if the validator is enabled, otherwise the global shares were already excluded during disableValidator call and the rest does not matter anymore
         uint128 validatorSharesRemove = tokensToShares(amount, v.exchangeRate);
         require(validatorSharesRemove > 0, "Unstake amount is too small");
-
         if (v.disabledEpoch == 0){
-            updateGlobalExchangeRate();
-            updateValidator(v);
             // if validator is enabled and the program has not ended -> check for unstaking beyond max cap or min stake required
             if (isValidator && endEpoch > block.number){
                 uint128 newValidatorStaked = s.staked - amount;
