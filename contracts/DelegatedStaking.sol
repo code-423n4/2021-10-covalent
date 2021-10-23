@@ -456,10 +456,11 @@ contract DelegatedStaking is Ownable, Initializable  {
        commissionRewards = new uint128[](validatorsN);
        uint256 currentEpoch = block.number < endEpoch? block.number: endEpoch;
        uint128 newGlobalExchangeRate = uint128((uint256(allocatedTokensPerEpoch) * divider/totalGlobalShares)*(currentEpoch - lastUpdateEpoch)) + globalExchangeRate;
-
+       Validator storage v;
+       Staking storage s;
         for (uint128 i = 0; i < validatorsN; ++i){
-            Validator storage v = validators[i];
-            Staking storage s = v.stakings[delegator];
+            v = validators[i];
+            s = v.stakings[delegator];
             delegated[i] = s.staked;
             if (v.disabledEpoch == 0){
                 uint128 newTokensGiven = sharesToTokens(v.globalShares, newGlobalExchangeRate - v.lastUpdateGlobalRate);
