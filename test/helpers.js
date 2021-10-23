@@ -3,6 +3,7 @@ const erc20abi = require("../abis/erc20.json");
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const hre = require("hardhat");
+//const { BigNumber } = require("ethers");
 
 const oneToken =  ethers.BigNumber.from("1000000000000000000");
 const OWNER = "0x8D1f2eBFACCf1136dB76FDD1b86f1deDE2D23852";
@@ -141,10 +142,8 @@ async function getDeployedContract(){
     await impersonateAll();
     const owner = await getOwner();
     const DelegatedStaking = await ethers.getContractFactory("DelegatedStaking", owner);
-    const contract = await DelegatedStaking.deploy();
+    const contract = await upgrades.deployProxy(DelegatedStaking, [0], { initializer: 'initialize' });
     await contract.deployed();
-    await contract.initialize(0);
-
     return contract;
 }
 
