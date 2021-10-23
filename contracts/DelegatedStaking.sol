@@ -72,7 +72,7 @@ contract DelegatedStaking is Ownable, Initializable  {
         emit Initialized(minStakedRequired, validatorCoolDown, delegatorCoolDown, maxCapMultiplier, allocatedTokensPerEpoch, globalExchangeRate);
     }
     // used to transfer CQT from delegators, validators and the owner to the contract
-    function transferToContract(address from, uint128 amount) internal {
+    function _transferToContract(address from, uint128 amount) internal {
         require(CQT.balanceOf(from) >= amount, "The sender does not have enough CQT balance to transfer");
         uint balanceBeforeTransfer = CQT.balanceOf(address(this));
         CQT.transferFrom(from, address(this), amount);
@@ -80,7 +80,7 @@ contract DelegatedStaking is Ownable, Initializable  {
     }
 
     // used to transfer CQT from contract, for rewards redemption or transferring out unstaked
-    function transferFromContract(address to, uint128 amount) internal {
+    function _transferFromContract(address to, uint128 amount) internal {
         require(CQT.balanceOf(address(this)) >= amount, "The contract does not have enough CQT balance to transfer");
         uint balanceBeforeTransfer = CQT.balanceOf(to);
         CQT.transfer(to, amount);
@@ -94,7 +94,7 @@ contract DelegatedStaking is Ownable, Initializable  {
             endEpoch += amount / allocatedTokensPerEpoch;
         else
             rewardsLocked += amount;
-        transferToContract(msg.sender, amount);
+        _transferToContract(msg.sender, amount);
         emit RewardTokensDeposited(amount);
     }
 
@@ -111,12 +111,12 @@ contract DelegatedStaking is Ownable, Initializable  {
             require(rewardsLocked >= amount, "Amount is greater than available");
             rewardsLocked -= amount;
         }
-        transferFromContract(msg.sender, amount);
+        _transferFromContract(msg.sender, amount);
         emit AllocatedTokensTaken(amount);
     }
 
     // update global exchange rate
-    function updateGlobalExchangeRate() internal {
+    function _updateGlobalExchangeRate() internal {
         uint128 currentBlock = uint128(block.number);
         // if the program ended, set update epoch to the end epoch
         uint128 currentEpoch = currentBlock < endEpoch? currentBlock : endEpoch;
@@ -132,7 +132,7 @@ contract DelegatedStaking is Ownable, Initializable  {
     }
 
     // update validator exchange rate
-    function updateValidator(Validator storage v) internal {
+    function _updateValidator(Validator storage v) internal {
         // if validator is disabled, we do not update it since it was updated during disabling transaction
         if(v.disabledEpoch == 0){
             if (v.totalShares == 0){
@@ -143,7 +143,7 @@ contract DelegatedStaking is Ownable, Initializable  {
                 // the growth of global exchange rate since the validator was updated the last time
                 uint128 rateDifference = globalExchangeRate - v.lastUpdateGlobalRate;
                 // tokens given to the validator and its delegators since last update
-                uint128 tokensGivenToValidator = sharesToTokens(v.globalShares, rateDifference);
+                uint128 tokensGivenToValidator = _sharesToTokens(v.globalShares, rateDifference);
                 // commission paid out of the tokens
                 uint128 commissionPaid = uint128(uint256(tokensGivenToValidator) * uint256(v.commissionRate) /  divider);
                 // increase validator exchange rate by distributing the leftover tokens through the validator shares
@@ -156,11 +156,11 @@ contract DelegatedStaking is Ownable, Initializable  {
         }
     }
     // used to convert global shares or validator shares to CQT
-    function sharesToTokens(uint128 sharesN, uint128 rate) internal view returns(uint128){
+    function _sharesToTokens(uint128 sharesN, uint128 rate) internal view returns(uint128){
         return uint128(uint256(sharesN) * uint256(rate) / divider);
     }
     // used to convert CQT to global shares or validator shares
-    function tokensToShares(uint128 amount, uint128 rate) internal view returns(uint128){
+    function _tokensToShares(uint128 amount, uint128 rate) internal view returns(uint128){
         return uint128(uint256(amount) * divider / uint256(rate));
     }
 
@@ -180,9 +180,9 @@ contract DelegatedStaking is Ownable, Initializable  {
         }
         require(endEpoch > block.number, "Program ended");
 
-        updateGlobalExchangeRate();
+        _updateGlobalExchangeRate();
         Validator storage v = validators[validatorId];
-        updateValidator(v);
+        _updateValidator(v);
         // if staker is validator who self delegates
         if (msg.sender == v._address){
             require(amount + v.stakings[msg.sender].staked >= validatorMinStakedRequired, "Amount is less than minimum staked required");
@@ -197,16 +197,16 @@ contract DelegatedStaking is Ownable, Initializable  {
         // it is set to true when there is a stake
         // it is set to false when we recover delegation from unstaking
         if (withTransfer)
-            transferToContract(msg.sender, amount);
+            _transferToContract(msg.sender, amount);
         Staking storage s = v.stakings[msg.sender];
 
         // update global shares #
-        uint128 globalSharesToAdd = tokensToShares(amount, globalExchangeRate);
+        uint128 globalSharesToAdd = _tokensToShares(amount, globalExchangeRate);
         totalGlobalShares += globalSharesToAdd;
         v.globalShares += globalSharesToAdd;
 
         // update validator shares #
-        uint128 newDelegatorSharesN = tokensToShares(amount, v.exchangeRate);
+        uint128 newDelegatorSharesN = _tokensToShares(amount, v.exchangeRate);
         v.totalShares += newDelegatorSharesN;
         s.shares += newDelegatorSharesN;
         v.delegated += amount;
@@ -221,10 +221,10 @@ contract DelegatedStaking is Ownable, Initializable  {
         Staking storage s = v.stakings[msg.sender];
         require(s.staked >= amount, "Staked is less than amount provided");
         bool isValidator = msg.sender == v._address;
-        updateGlobalExchangeRate();
-        updateValidator(v);
+        _updateGlobalExchangeRate();
+        _updateValidator(v);
         // only update if the validator is enabled, otherwise the global shares were already excluded during disableValidator call and the rest does not matter anymore
-        uint128 validatorSharesRemove = tokensToShares(amount, v.exchangeRate);
+        uint128 validatorSharesRemove = _tokensToShares(amount, v.exchangeRate);
         require(validatorSharesRemove > 0, "Unstake amount is too small");
         if (v.disabledEpoch == 0){
             // if validator is enabled and the program has not ended -> check for unstaking beyond max cap or min stake required
@@ -237,7 +237,7 @@ contract DelegatedStaking is Ownable, Initializable  {
             }
 
             // update global shares #
-            uint128 globalSharesRemove = tokensToShares(amount, globalExchangeRate);
+            uint128 globalSharesRemove = _tokensToShares(amount, globalExchangeRate);
             require(globalSharesRemove > 0, "Unstake amount is too small");
             totalGlobalShares -= globalSharesRemove;
             v.globalShares -= globalSharesRemove;
@@ -271,16 +271,16 @@ contract DelegatedStaking is Ownable, Initializable  {
     // redeem all available rewards
     function redeemAllRewards( uint128 validatorId, address beneficiary) public {
         require(beneficiary!=address(0x0), "Invalid beneficiary");
-        updateGlobalExchangeRate();
-        updateValidator(validators[validatorId]);
+        _updateGlobalExchangeRate();
+        _updateValidator(validators[validatorId]);
         Validator storage v = validators[validatorId];
         Staking storage s = v.stakings[msg.sender];
-        uint128 rewards = sharesToTokens(s.shares, v.exchangeRate) - s.staked;
+        uint128 rewards = _sharesToTokens(s.shares, v.exchangeRate) - s.staked;
         require(rewards > 0, "Nothing to redeem");
 
         // update validator shares #
         // this only includes rewards earned, no need to include commission to validator shares
-        uint128 validatorSharesRemove = tokensToShares(rewards, v.exchangeRate);
+        uint128 validatorSharesRemove = _tokensToShares(rewards, v.exchangeRate);
         s.shares -= validatorSharesRemove;
         v.totalShares -= validatorSharesRemove;
 
@@ -291,13 +291,13 @@ contract DelegatedStaking is Ownable, Initializable  {
             emit CommissionRewardRedeemed(validatorId, beneficiary, v.commissionAvailableToRedeem);
             v.commissionAvailableToRedeem = 0;
         }
-        transferFromContract(beneficiary, rewards);
+        _transferFromContract(beneficiary, rewards);
 
         // update global shares #
         // this includes commission and rewards earned
         // only update if the validator is enabled, otherwise the shares were already excluded during disableValidator call
         if (v.disabledEpoch == 0){
-           uint128 globalSharesRemove = tokensToShares(rewards, globalExchangeRate);
+           uint128 globalSharesRemove = _tokensToShares(rewards, globalExchangeRate);
             totalGlobalShares -= globalSharesRemove;
             v.globalShares -= globalSharesRemove;
         }
@@ -307,19 +307,19 @@ contract DelegatedStaking is Ownable, Initializable  {
     function redeemRewards( uint128 validatorId, address beneficiary, uint128 amount) public {
         require(beneficiary!=address(0x0), "Invalid beneficiary");
         require(amount != 0, "Cannot redeem 0 tokens");
-        updateGlobalExchangeRate();
+        _updateGlobalExchangeRate();
         Validator storage v = validators[validatorId];
-        updateValidator(v);
+        _updateValidator(v);
         Staking storage s = v.stakings[msg.sender];
 
-        uint128 rewards = sharesToTokens(s.shares, v.exchangeRate) - s.staked;
+        uint128 rewards = _sharesToTokens(s.shares, v.exchangeRate) - s.staked;
         if(msg.sender == v._address){
             require(rewards + v.commissionAvailableToRedeem >= amount, "Cannot redeem more than available");
             // first redeem rewards from commission
             uint128 commissionLeftOver = amount < v.commissionAvailableToRedeem ? v.commissionAvailableToRedeem - amount : 0;
             // if there is more, redeem  it from regular rewards
             if (commissionLeftOver == 0){
-                uint128 validatorSharesRemove = tokensToShares(amount - v.commissionAvailableToRedeem, v.exchangeRate);
+                uint128 validatorSharesRemove = _tokensToShares(amount - v.commissionAvailableToRedeem, v.exchangeRate);
                 s.shares -= validatorSharesRemove;
                 v.totalShares -= validatorSharesRemove;
             }
@@ -327,17 +327,17 @@ contract DelegatedStaking is Ownable, Initializable  {
         }
         else {
             require(rewards >= amount, "Cannot redeem more than available");
-            uint128 validatorSharesRemove = tokensToShares(amount, v.exchangeRate);
+            uint128 validatorSharesRemove = _tokensToShares(amount, v.exchangeRate);
             s.shares -= validatorSharesRemove;
             v.totalShares -= validatorSharesRemove;
         }
-        transferFromContract(beneficiary, amount);
+        _transferFromContract(beneficiary, amount);
 
         // update global shares #
         // this includes commission and rewards earned
         // only update if the validator is enabled, otherwise the shares were already excluded during disableValidator call
         if (v.disabledEpoch == 0){
-            uint128 globalSharesRemove = tokensToShares(amount, globalExchangeRate);
+            uint128 globalSharesRemove = _tokensToShares(amount, globalExchangeRate);
             totalGlobalShares -= globalSharesRemove;
             v.globalShares -= globalSharesRemove;
         }
@@ -361,8 +361,8 @@ contract DelegatedStaking is Ownable, Initializable  {
         Validator storage v = validators[validatorId];
         require(v.disabledEpoch == 0, "Validator is already disabled");
         require(v._address == msg.sender || msg.sender == owner(), "Caller is not the owner or the validator");
-        updateGlobalExchangeRate();
-        updateValidator(v);
+        _updateGlobalExchangeRate();
+        _updateValidator(v);
         v.disabledEpoch = uint128(block.number) < endEpoch? uint128(block.number) : endEpoch;
         totalGlobalShares -= v.globalShares;
         emit ValidatorDisabled(validatorId);
@@ -372,7 +372,7 @@ contract DelegatedStaking is Ownable, Initializable  {
     function setAllocatedTokensPerEpoch(uint128 amount) public onlyOwner {
         require(amount > 0, "Amount is 0");
         if (endEpoch != 0){
-            updateGlobalExchangeRate();
+            _updateGlobalExchangeRate();
             // get number of epochs from now to the end epoch
             uint128 epochs = endEpoch > uint128(block.number) ? endEpoch - uint128(block.number) : 0;
             // calculate how much rewards would be distributed with the old emission rate
@@ -396,8 +396,8 @@ contract DelegatedStaking is Ownable, Initializable  {
     // only owner can change commission rate
     function setValidatorCommissionRate(uint128 amount, uint128 validatorId) public onlyOwner {
         require(amount < divider, "Rate must be less than 100%");
-        updateGlobalExchangeRate();
-        updateValidator(validators[validatorId]);
+        _updateGlobalExchangeRate();
+        _updateValidator(validators[validatorId]);
         validators[validatorId].commissionRate = amount;
         emit ValidatorCommissionRateChanged(validatorId, amount);
     }
@@ -428,7 +428,7 @@ contract DelegatedStaking is Ownable, Initializable  {
         Unstaking storage us = validators[validatorId].unstakings[msg.sender][unstakingId];
         require( uint128(block.number) > us.coolDownEnd, "Cooldown period has not ended" );
         require(us.amount >= amount, "Amount is too high");
-        transferFromContract(msg.sender, amount);
+        _transferFromContract(msg.sender, amount);
         us.amount -= amount;
         // set cool down end to 0 to release gas if new unstaking amount is 0
         if (us.amount == 0)
@@ -449,7 +449,7 @@ contract DelegatedStaking is Ownable, Initializable  {
         return (commissionRates, delegated);
     }
 
-    // this follows the same logic as updateGlobalExchangeRate and updateValidator
+    // this follows the same logic as _updateGlobalExchangeRate and _updateValidator
     // array index is id of validator
     function getDelegatorDetails(address delegator) public view returns( uint128[] memory delegated,  uint128[] memory rewardsAvailable, uint128[] memory commissionRewards) {
        delegated = new uint128[](validatorsN);
@@ -464,15 +464,15 @@ contract DelegatedStaking is Ownable, Initializable  {
             s = v.stakings[delegator];
             delegated[i] = s.staked;
             if (v.disabledEpoch == 0){
-                uint128 newTokensGiven = sharesToTokens(v.globalShares, newGlobalExchangeRate - v.lastUpdateGlobalRate);
+                uint128 newTokensGiven = _sharesToTokens(v.globalShares, newGlobalExchangeRate - v.lastUpdateGlobalRate);
                 uint128 commissionPaid = uint128(uint256(newTokensGiven) * uint256(v.commissionRate) /  divider);
                 uint128 rateIncrease = uint128(uint256(newTokensGiven - commissionPaid) * divider / v.totalShares);
-                rewardsAvailable[i] = sharesToTokens(s.shares, v.exchangeRate + rateIncrease) - s.staked;
+                rewardsAvailable[i] = _sharesToTokens(s.shares, v.exchangeRate + rateIncrease) - s.staked;
                 if(delegator == v._address)
                     commissionRewards[i] = v.commissionAvailableToRedeem + commissionPaid;
             }
             else {
-                rewardsAvailable[i] = sharesToTokens(s.shares, v.exchangeRate) - s.staked;
+                rewardsAvailable[i] = _sharesToTokens(s.shares, v.exchangeRate) - s.staked;
                 if(delegator == v._address)
                     commissionRewards[i] = v.commissionAvailableToRedeem;
             }
