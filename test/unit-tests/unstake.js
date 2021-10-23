@@ -11,13 +11,13 @@ describe("Unstaking", function () {
         const [contract, cqtContract, validator1, validator2, delegator1, delegator2 ] = await getAll()
         await deposit(contract, (oneToken).mul(100000));
         await contract.addValidator(VALIDATOR_1, OPERATOR_1, 1000000000000)
-        expect(contract.connect(delegator1).unstake(0, (oneToken))).to.revertedWith("Staked is less than amount provided")
+        expect(contract.connect(delegator1).unstake(0, (oneToken))).to.revertedWith("Staked < amount provided")
         await stake(oneToken.mul(1000), validator1, cqtContract, contract, 0)
-        expect(contract.connect(delegator1).unstake(0, (oneToken.mul(11)))).to.revertedWith("Staked is less than amount provided")
+        expect(contract.connect(delegator1).unstake(0, (oneToken.mul(11)))).to.revertedWith("Staked < amount provided")
         await stake(oneToken.mul(1000), delegator1, cqtContract, contract, 0)
-        expect(contract.connect(delegator1).unstake(0, (oneToken.mul(1001)))).to.revertedWith("Staked is less than amount provided")
-        expect(contract.connect(delegator1).unstake(0, (oneToken.mul(100000)))).to.revertedWith("Staked is less than amount provided")
-        expect(contract.connect(delegator1).unstake(0, (oneToken.mul(1000)).add(1))).to.revertedWith("Staked is less than amount provided")
+        expect(contract.connect(delegator1).unstake(0, (oneToken.mul(1001)))).to.revertedWith("Staked < amount provided")
+        expect(contract.connect(delegator1).unstake(0, (oneToken.mul(100000)))).to.revertedWith("Staked < amount provided")
+        expect(contract.connect(delegator1).unstake(0, (oneToken.mul(1000)).add(1))).to.revertedWith("Staked < amount provided")
    });
 
    it("Should revert when unstake is too small", async function () {
@@ -55,8 +55,8 @@ describe("Unstaking", function () {
         await contract.addValidator(VALIDATOR_1, OPERATOR_1, 1000000000000)
         expect(await stake(required, validator1, cqtContract, contract, 0)).to.emit(contract, 'Staked').withArgs(0, VALIDATOR_1, required.toString());
 
-        expect(contract.connect(validator1).unstake(0, oneToken)).to.revertedWith("Cannot unstake beyond minimum staked required")
-        expect(contract.connect(validator1).unstake(0, 10)).to.revertedWith("Cannot unstake beyond minimum staked required")
+        expect(contract.connect(validator1).unstake(0, oneToken)).to.revertedWith("Unstake > min staked required")
+        expect(contract.connect(validator1).unstake(0, 10)).to.revertedWith("Unstake > min staked required")
     });
 
     it("Should emit event when unstaked successfully", async function () {
