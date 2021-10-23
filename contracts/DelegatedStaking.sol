@@ -346,6 +346,7 @@ contract DelegatedStaking is Ownable, Initializable  {
 
     // add new validator instance
     function addValidator(address validator, address operator, uint128 commissionRate) public onlyOwner {
+        require(commissionRate < divider, "Rate must be less than 100%");
         uint128 N = validatorsN;
         validators[N]._address = validator;
         validators[N].operator = operator;
