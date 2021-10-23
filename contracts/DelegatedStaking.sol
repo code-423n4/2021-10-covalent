@@ -1,11 +1,12 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-
-contract DelegatedStaking is Ownable, Initializable  {
+contract DelegatedStaking is OwnableUpgradeable{
+    using SafeERC20Upgradeable for IERC20Upgradeable;
     uint256 constant divider = 10**18; // 18 decimals used for scaling the rates
     uint128 validatorCoolDown; // how many epochs until validator unstaking is unlocked
     uint128 delegatorCoolDown; // how many epochs until delegator unstaking is unlocked
@@ -19,7 +20,7 @@ contract DelegatedStaking is Ownable, Initializable  {
     uint128 globalExchangeRate;
     uint128 validatorsN; // number of validators, used to get validator ids
     mapping(uint128 => Validator) validators; // id -> validator instance
-    IERC20 CQT;
+    IERC20Upgradeable CQT;
 
     struct Staking {
         uint128 staked; // initial CQT amount staked
@@ -62,29 +63,25 @@ contract DelegatedStaking is Ownable, Initializable  {
 
     // this is used to have the contract upgradeable
     function initialize(uint128 minStakedRequired) public initializer {
+        __Ownable_init();
         validatorMinStakedRequired = minStakedRequired;
         validatorCoolDown = 180*6646; // ~ 6 months
         delegatorCoolDown = 28*6646; // ~ 28 days
         maxCapMultiplier = 10;
         allocatedTokensPerEpoch = 1*10**18; // should never be 0
         globalExchangeRate = 10**18; // 1 to 1
-        CQT = IERC20(0xD417144312DbF50465b1C641d016962017Ef6240);
+        CQT = IERC20Upgradeable(0xD417144312DbF50465b1C641d016962017Ef6240);
         emit Initialized(minStakedRequired, validatorCoolDown, delegatorCoolDown, maxCapMultiplier, allocatedTokensPerEpoch, globalExchangeRate);
     }
+    
     // used to transfer CQT from delegators, validators and the owner to the contract
     function _transferToContract(address from, uint128 amount) internal {
-        require(CQT.balanceOf(from) >= amount, "The sender does not have enough CQT balance to transfer");
-        uint balanceBeforeTransfer = CQT.balanceOf(address(this));
-        CQT.transferFrom(from, address(this), amount);
-        assert(CQT.balanceOf(address(this)) == balanceBeforeTransfer + amount);
+        CQT.safeTransferFrom(from, address(this), amount);
     }
 
     // used to transfer CQT from contract, for rewards redemption or transferring out unstaked
     function _transferFromContract(address to, uint128 amount) internal {
-        require(CQT.balanceOf(address(this)) >= amount, "The contract does not have enough CQT balance to transfer");
-        uint balanceBeforeTransfer = CQT.balanceOf(to);
-        CQT.transfer(to, amount);
-        assert(CQT.balanceOf(to) == balanceBeforeTransfer + amount);
+        CQT.safeTransfer(to, amount);
     }
 
     // transfer CQT from the owner to the contract for rewards allocation, must change end epoch
