@@ -124,8 +124,7 @@ contract DelegatedStaking is Ownable, Initializable  {
             // when no one has staked anything, do not update the rate
             if(totalGlobalShares > 0)
             {
-                uint128 perEpochRateIncrease = uint128(uint256(allocatedTokensPerEpoch)*divider/uint256(totalGlobalShares));
-                globalExchangeRate += perEpochRateIncrease * (currentEpoch - lastUpdateEpoch);
+                globalExchangeRate += uint128(uint256(allocatedTokensPerEpoch) * divider * uint256(currentEpoch - lastUpdateEpoch)/uint256(totalGlobalShares)) ;
             }
             lastUpdateEpoch = currentEpoch;
         }
