@@ -90,6 +90,7 @@ contract DelegatedStaking is Ownable, Initializable  {
     // transfer CQT from the owner to the contract for rewards allocation, must change end epoch
     function depositRewardTokens(uint128 amount) public onlyOwner {
         require(amount >= allocatedTokensPerEpoch, "Amount must cover at least 1 epoch");
+        require(amount % allocatedTokensPerEpoch == 0, "Not multiple");
         if (endEpoch != 0)
             endEpoch += amount / allocatedTokensPerEpoch;
         else
@@ -101,6 +102,7 @@ contract DelegatedStaking is Ownable, Initializable  {
     // transfer reward CQT from the contract to the owner, must change end epoch and not allow transfer from the past
     function takeOutRewardTokens(uint128 amount) public onlyOwner {
         require(amount > 0, "Amount is 0");
+        require(amount % allocatedTokensPerEpoch == 0, "Not multiple");
         if (endEpoch != 0){
             uint128 currentEpoch = uint128(block.number);
             uint128 epochs = amount / allocatedTokensPerEpoch;
@@ -369,6 +371,7 @@ contract DelegatedStaking is Ownable, Initializable  {
     // change emission rate, should reset end epoch
     function setAllocatedTokensPerEpoch(uint128 amount) public onlyOwner {
         require(amount > 0, "Amount is 0");
+        uint128 toTransfer;
         if (endEpoch != 0){
             _updateGlobalExchangeRate();
             // get number of epochs from now to the end epoch
@@ -376,12 +379,19 @@ contract DelegatedStaking is Ownable, Initializable  {
             // calculate how much rewards would be distributed with the old emission rate
             uint128 futureRewards = allocatedTokensPerEpoch * epochs;
             // calculate how many epochs will be covered
-            uint128 addEpochs = futureRewards/amount;
+            uint128 addEpochs = futureRewards / amount;
+            toTransfer = futureRewards % amount;
             require(addEpochs != 0, "This amount will end the program");
             endEpoch = uint128(block.number) + addEpochs;
         }
+        else {
+          toTransfer = rewardsLocked % amount;
+        }
         allocatedTokensPerEpoch = amount;
         emit EmissionRateChanged(amount);
+        if(toTransfer > 0)
+            _transferFromContract(msg.sender, toTransfer);
+
     }
 
     // we assume that we will never set it to less than what is staked already
