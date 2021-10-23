@@ -450,10 +450,10 @@ contract DelegatedStaking is Ownable, Initializable  {
 
     // this follows the same logic as updateGlobalExchangeRate and updateValidator
     // array index is id of validator
-    function getDelegatorDetails(address delegator) public view returns( uint[] memory delegated,  uint[] memory rewardsAvailable, uint[] memory commissionRewards) {
-       delegated = new uint[](validatorsN);
-       rewardsAvailable = new uint[](validatorsN);
-       commissionRewards = new uint[](validatorsN);
+    function getDelegatorDetails(address delegator) public view returns( uint128[] memory delegated,  uint128[] memory rewardsAvailable, uint128[] memory commissionRewards) {
+       delegated = new uint128[](validatorsN);
+       rewardsAvailable = new uint128[](validatorsN);
+       commissionRewards = new uint128[](validatorsN);
        uint256 currentEpoch = block.number < endEpoch? block.number: endEpoch;
        uint128 newGlobalExchangeRate = uint128((uint256(allocatedTokensPerEpoch) * divider/totalGlobalShares)*(currentEpoch - lastUpdateEpoch)) + globalExchangeRate;
 
