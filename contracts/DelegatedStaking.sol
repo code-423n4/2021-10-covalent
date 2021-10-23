@@ -111,7 +111,7 @@ contract DelegatedStaking is Ownable, Initializable  {
             require(rewardsLocked >= amount, "Amount is greater than available");
             rewardsLocked -= amount;
         }
-        transferFromContract(owner(), amount);
+        transferFromContract(msg.sender, amount);
         emit AllocatedTokensTaken(amount);
     }
 
