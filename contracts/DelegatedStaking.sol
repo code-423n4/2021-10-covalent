@@ -268,45 +268,9 @@ contract DelegatedStaking is Ownable, Initializable  {
         emit RecoveredUnstake(validatorId, msg.sender, amount, unstakingId);
     }
 
-    // redeem all available rewards
-    function redeemAllRewards( uint128 validatorId, address beneficiary) public {
+    // if amount is 0 then redeem all
+    function _redeemRewards( uint128 validatorId, address beneficiary, uint128 amount) internal {
         require(beneficiary!=address(0x0), "Invalid beneficiary");
-        _updateGlobalExchangeRate();
-        _updateValidator(validators[validatorId]);
-        Validator storage v = validators[validatorId];
-        Staking storage s = v.stakings[msg.sender];
-        uint128 rewards = _sharesToTokens(s.shares, v.exchangeRate) - s.staked;
-        require(rewards > 0, "Nothing to redeem");
-
-        // update validator shares #
-        // this only includes rewards earned, no need to include commission to validator shares
-        uint128 validatorSharesRemove = _tokensToShares(rewards, v.exchangeRate);
-        s.shares -= validatorSharesRemove;
-        v.totalShares -= validatorSharesRemove;
-
-        emit RewardRedeemed(validatorId, beneficiary, rewards);
-
-        if(msg.sender == v._address){
-            rewards += v.commissionAvailableToRedeem;
-            emit CommissionRewardRedeemed(validatorId, beneficiary, v.commissionAvailableToRedeem);
-            v.commissionAvailableToRedeem = 0;
-        }
-        _transferFromContract(beneficiary, rewards);
-
-        // update global shares #
-        // this includes commission and rewards earned
-        // only update if the validator is enabled, otherwise the shares were already excluded during disableValidator call
-        if (v.disabledEpoch == 0){
-           uint128 globalSharesRemove = _tokensToShares(rewards, globalExchangeRate);
-            totalGlobalShares -= globalSharesRemove;
-            v.globalShares -= globalSharesRemove;
-        }
-    }
-
-    // if validator calls redeem rewards, first tokens paid from commissions will be redeemed and then regular rewards
-    function redeemRewards( uint128 validatorId, address beneficiary, uint128 amount) public {
-        require(beneficiary!=address(0x0), "Invalid beneficiary");
-        require(amount != 0, "Cannot redeem 0 tokens");
         _updateGlobalExchangeRate();
         Validator storage v = validators[validatorId];
         _updateValidator(v);
@@ -314,6 +278,9 @@ contract DelegatedStaking is Ownable, Initializable  {
 
         uint128 rewards = _sharesToTokens(s.shares, v.exchangeRate) - s.staked;
         if(msg.sender == v._address){
+            if(amount == 0){
+                amount = rewards + v.commissionAvailableToRedeem;
+            }
             require(rewards + v.commissionAvailableToRedeem >= amount, "Cannot redeem more than available");
             // first redeem rewards from commission
             uint128 commissionLeftOver = amount < v.commissionAvailableToRedeem ? v.commissionAvailableToRedeem - amount : 0;
@@ -323,9 +290,13 @@ contract DelegatedStaking is Ownable, Initializable  {
                 s.shares -= validatorSharesRemove;
                 v.totalShares -= validatorSharesRemove;
             }
+            emit CommissionRewardRedeemed(validatorId, beneficiary, v.commissionAvailableToRedeem - commissionLeftOver);
             v.commissionAvailableToRedeem = commissionLeftOver;
         }
         else {
+            if(amount == 0){
+                amount = rewards;
+            }
             require(rewards >= amount, "Cannot redeem more than available");
             uint128 validatorSharesRemove = _tokensToShares(amount, v.exchangeRate);
             s.shares -= validatorSharesRemove;
@@ -342,6 +313,17 @@ contract DelegatedStaking is Ownable, Initializable  {
             v.globalShares -= globalSharesRemove;
         }
         emit RewardRedeemed(validatorId, beneficiary, amount);
+    }
+
+    // redeem all available rewards
+    function redeemAllRewards( uint128 validatorId, address beneficiary) external {
+        _redeemRewards(validatorId, beneficiary, 0);
+    }
+
+    // if validator calls redeem rewards, first tokens paid from comissions will be redeemed and then regular rewards
+    function redeemRewards( uint128 validatorId, address beneficiary, uint128 amount) external {
+        require(amount > 0, "Amount is 0");
+        _redeemRewards(validatorId, beneficiary, amount);
     }
 
     // add new validator instance
