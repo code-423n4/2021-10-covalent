@@ -56,6 +56,49 @@
       {
         "indexed": false,
         "internalType": "uint128",
+        "name": "minStakedRequired",
+        "type": "uint128"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint128",
+        "name": "validatorCoolDown",
+        "type": "uint128"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint128",
+        "name": "delegatorCoolDown",
+        "type": "uint128"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint128",
+        "name": "maxCapMultiplier",
+        "type": "uint128"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint128",
+        "name": "allocatedTokensPerEpoch",
+        "type": "uint128"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint128",
+        "name": "globalExchangeRate",
+        "type": "uint128"
+      }
+    ],
+    "name": "Initialized",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint128",
         "name": "amount",
         "type": "uint128"
       }
@@ -210,7 +253,7 @@
         "type": "uint128"
       }
     ],
-    "name": "TransferedUnstake",
+    "name": "TransferredUnstake",
     "type": "event"
   },
   {
@@ -393,19 +436,19 @@
     "name": "getDelegatorDetails",
     "outputs": [
       {
-        "internalType": "uint256[]",
+        "internalType": "uint128[]",
         "name": "delegated",
-        "type": "uint256[]"
+        "type": "uint128[]"
       },
       {
-        "internalType": "uint256[]",
+        "internalType": "uint128[]",
         "name": "rewardsAvailable",
-        "type": "uint256[]"
+        "type": "uint128[]"
       },
       {
-        "internalType": "uint256[]",
+        "internalType": "uint128[]",
         "name": "commissionRewards",
-        "type": "uint256[]"
+        "type": "uint128[]"
       }
     ],
     "stateMutability": "view",
@@ -702,7 +745,7 @@
       },
       {
         "internalType": "uint128",
-        "name": "stakingId",
+        "name": "unstakingId",
         "type": "uint128"
       }
     ],
