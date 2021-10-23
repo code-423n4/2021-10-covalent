@@ -58,7 +58,7 @@ describe("Transfer Unstaked", function () {
       await stake(amount, validator1, cqtContract, contract, 1)
       let amountIn = oneToken.mul(7000)
       await contract.connect(delegator1).unstake(0, amountIn)
-      await expect( contract.connect(delegator1).redelegateUnstaked(amountIn, 0, 1, 0)).to.revertedWith("Can only transfer unstaked from disabled validator")
+      await expect( contract.connect(delegator1).redelegateUnstaked(amountIn, 0, 1, 0)).to.revertedWith("Validator is not disabled")
    });
 
    it("Should revert when validators attempt to redelegate", async function () {
@@ -74,7 +74,7 @@ describe("Transfer Unstaked", function () {
     let amountIn = oneToken.mul(7000)
     await stake(amount, validator1, cqtContract, contract, 1)
     await contract.connect(delegator1).unstake(0, amountIn)
-    await expect( contract.connect(validator1).redelegateUnstaked(amountIn, 0, 1, 0)).to.revertedWith("Only delegators can redelegate tokens")
+    await expect( contract.connect(validator1).redelegateUnstaked(amountIn, 0, 1, 0)).to.revertedWith("Validator cannot redelegate")
  });
 
  it("Should revert when redelegate greater than unstaked", async function () {

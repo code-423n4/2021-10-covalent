@@ -27,17 +27,17 @@ describe("Disable validator", function () {
     const [contract, cqtContract, validator1, validator2, delegator1, delegator2 ] = await getAll()
     await contract.addValidator(VALIDATOR_1, OPERATOR_1, 10);
     await contract.addValidator(VALIDATOR_2, OPERATOR_2, 40);
-    expect(contract.connect(validator2).disableValidator(5)).to.revertedWith("Caller is not the owner or the validator")
-    expect(contract.connect(validator2).disableValidator(0)).to.revertedWith("Caller is not the owner or the validator")
-    expect(contract.connect(validator2).disableValidator(2)).to.revertedWith("Caller is not the owner or the validator")
+    expect(contract.connect(validator2).disableValidator(5)).to.revertedWith("Caller is not owner or validator")
+    expect(contract.connect(validator2).disableValidator(0)).to.revertedWith("Caller is not owner or validator")
+    expect(contract.connect(validator2).disableValidator(2)).to.revertedWith("Caller is not owner or validator")
 
-    expect(contract.connect(delegator1).disableValidator(5)).to.revertedWith("Caller is not the owner or the validator")
-    expect(contract.connect(delegator1).disableValidator(0)).to.revertedWith("Caller is not the owner or the validator")
-    expect(contract.connect(delegator1).disableValidator(1)).to.revertedWith("Caller is not the owner or the validator")
+    expect(contract.connect(delegator1).disableValidator(5)).to.revertedWith("Caller is not owner or validator")
+    expect(contract.connect(delegator1).disableValidator(0)).to.revertedWith("Caller is not owner or validator")
+    expect(contract.connect(delegator1).disableValidator(1)).to.revertedWith("Caller is not owner or validator")
 
-    expect(contract.connect(delegator2).disableValidator(5)).to.revertedWith("Caller is not the owner or the validator")
-    expect(contract.connect(delegator2).disableValidator(0)).to.revertedWith("Caller is not the owner or the validator")
-    expect(contract.connect(delegator2).disableValidator(1)).to.revertedWith("Caller is not the owner or the validator")
+    expect(contract.connect(delegator2).disableValidator(5)).to.revertedWith("Caller is not owner or validator")
+    expect(contract.connect(delegator2).disableValidator(0)).to.revertedWith("Caller is not owner or validator")
+    expect(contract.connect(delegator2).disableValidator(1)).to.revertedWith("Caller is not owner or validator")
     });
 
     it("Should revert when disabling validator twice", async function () {

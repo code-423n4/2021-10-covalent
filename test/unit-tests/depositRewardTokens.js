@@ -44,7 +44,7 @@ describe("Deposit reward Tokens", function () {
           const [contract, cqtContract, validator1, validator2, delegator1, delegator2 ] = await getAll()
           let amount = 600;
           await cqtContract.approve(contract.address, amount);
-          await expect(contract.depositRewardTokens(0)).to.be.revertedWith('Amount must cover at least 1 epoch');
+          await expect(contract.depositRewardTokens(0)).to.be.revertedWith('Does not cover least 1 epoch');
           await expect(contract.depositRewardTokens(amount + 200)).to.be.reverted;
           await expect(contract.depositRewardTokens("115792089237316195423570985008687907853269984665640564039457584007913129639935")).to.be.reverted;
         });

@@ -46,8 +46,8 @@ describe("Staking", function () {
         await contract.setValidatorMinStakedRequired(oneToken.mul(100000))
         await deposit(contract, (oneToken).mul(1000));
         await contract.addValidator(VALIDATOR_1, OPERATOR_1, 1000000000000)
-        expect(stake(required.sub(1), validator1, cqtContract, contract, 0)).to.revertedWith("Amount is less than minimum staked required")
-        expect(stake(oneToken, validator1, cqtContract, contract, 0)).to.revertedWith("Amount is less than minimum staked required")
+        expect(stake(required.sub(1), validator1, cqtContract, contract, 0)).to.revertedWith("Amount < min staked required")
+        expect(stake(oneToken, validator1, cqtContract, contract, 0)).to.revertedWith("Amount < min staked required")
       });
 
       it("Should revert when token is less than 1", async function () {

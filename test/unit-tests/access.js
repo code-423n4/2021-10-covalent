@@ -18,7 +18,7 @@ describe("Ownership", function () {
     await expect(contract.connect(validator1).addValidator(VALIDATOR_1, OPERATOR_1, 10)).to.be.revertedWith(ownableMessage);
     await expect(contract.connect(validator1).setAllocatedTokensPerEpoch(2)).to.be.revertedWith(ownableMessage);
     await contract.addValidator(VALIDATOR_1, OPERATOR_1, 10);
-    await expect(contract.connect(validator2).disableValidator(2)).to.be.revertedWith('Caller is not the owner or the validator');
+    await expect(contract.connect(validator2).disableValidator(2)).to.be.revertedWith('Caller is not owner or validator');
   });
 
   it("Should access depositRewardTokens, takeOutRewardTokens, addValidator, disabledValidator by owner.", async function () {

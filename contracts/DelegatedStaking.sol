@@ -73,7 +73,7 @@ contract DelegatedStaking is OwnableUpgradeable{
         CQT = IERC20Upgradeable(0xD417144312DbF50465b1C641d016962017Ef6240);
         emit Initialized(minStakedRequired, validatorCoolDown, delegatorCoolDown, maxCapMultiplier, allocatedTokensPerEpoch, globalExchangeRate);
     }
-    
+
     // used to transfer CQT from delegators, validators and the owner to the contract
     function _transferToContract(address from, uint128 amount) internal {
         CQT.safeTransferFrom(from, address(this), amount);
@@ -86,7 +86,7 @@ contract DelegatedStaking is OwnableUpgradeable{
 
     // transfer CQT from the owner to the contract for rewards allocation, must change end epoch
     function depositRewardTokens(uint128 amount) public onlyOwner {
-        require(amount >= allocatedTokensPerEpoch, "Amount must cover at least 1 epoch");
+        require(amount >= allocatedTokensPerEpoch, "Does not cover least 1 epoch");
         require(amount % allocatedTokensPerEpoch == 0, "Not multiple");
         if (endEpoch != 0)
             endEpoch += amount / allocatedTokensPerEpoch;
@@ -182,7 +182,7 @@ contract DelegatedStaking is OwnableUpgradeable{
         _updateValidator(v);
         // if staker is validator who self delegates
         if (msg.sender == v._address){
-            require(amount + v.stakings[msg.sender].staked >= validatorMinStakedRequired, "Amount is less than minimum staked required");
+            require(amount + v.stakings[msg.sender].staked >= validatorMinStakedRequired, "Amount < min staked required");
         }
         else {
             // otherwise need to check for max cap
@@ -216,7 +216,7 @@ contract DelegatedStaking is OwnableUpgradeable{
         require(validatorId < validatorsN, "Invalid validator");
         Validator storage v = validators[validatorId];
         Staking storage s = v.stakings[msg.sender];
-        require(s.staked >= amount, "Staked is less than amount provided");
+        require(s.staked >= amount, "Staked < amount provided");
         bool isValidator = msg.sender == v._address;
         _updateGlobalExchangeRate();
         _updateValidator(v);
@@ -230,7 +230,7 @@ contract DelegatedStaking is OwnableUpgradeable{
                 uint128 newValidatorMaxCap = newValidatorStaked * maxCapMultiplier;
                 uint128 delegated = v.delegated - s.staked;
                 require(delegated <= newValidatorMaxCap, "Cannot unstake beyond max cap");
-                require(newValidatorStaked >= validatorMinStakedRequired, "Cannot unstake beyond minimum staked required");
+                require(newValidatorStaked >= validatorMinStakedRequired, "Unstake > min staked required");
             }
 
             // update global shares #
@@ -278,7 +278,7 @@ contract DelegatedStaking is OwnableUpgradeable{
             if(amount == 0){
                 amount = rewards + v.commissionAvailableToRedeem;
             }
-            require(rewards + v.commissionAvailableToRedeem >= amount, "Cannot redeem more than available");
+            require(rewards + v.commissionAvailableToRedeem >= amount, "Redeem amount > available");
             // first redeem rewards from commission
             uint128 commissionLeftOver = amount < v.commissionAvailableToRedeem ? v.commissionAvailableToRedeem - amount : 0;
             // if there is more, redeem  it from regular rewards
@@ -294,7 +294,7 @@ contract DelegatedStaking is OwnableUpgradeable{
             if(amount == 0){
                 amount = rewards;
             }
-            require(rewards >= amount, "Cannot redeem more than available");
+            require(rewards >= amount, "Redeem amount > available");
             uint128 validatorSharesRemove = _tokensToShares(amount, v.exchangeRate);
             s.shares -= validatorSharesRemove;
             v.totalShares -= validatorSharesRemove;
@@ -339,7 +339,7 @@ contract DelegatedStaking is OwnableUpgradeable{
     function disableValidator(uint128 validatorId) public {
         Validator storage v = validators[validatorId];
         require(v.disabledEpoch == 0, "Validator is already disabled");
-        require(v._address == msg.sender || msg.sender == owner(), "Caller is not the owner or the validator");
+        require(v._address == msg.sender || msg.sender == owner(), "Caller is not owner or validator");
         _updateGlobalExchangeRate();
         _updateValidator(v);
         v.disabledEpoch = uint128(block.number) < endEpoch? uint128(block.number) : endEpoch;
@@ -398,8 +398,8 @@ contract DelegatedStaking is OwnableUpgradeable{
     // if a validator gets disabled, delegators can redelegate their tokens to another validator
     // first they need to unstake
     function redelegateUnstaked(uint128 amount, uint128 oldValidatorId, uint128 newValidatorId, uint128 unstakingId) public {
-        require(validators[oldValidatorId].disabledEpoch != 0, "Can only transfer unstaked from disabled validator");
-        require(validators[oldValidatorId]._address != msg.sender, "Only delegators can redelegate tokens");
+        require(validators[oldValidatorId].disabledEpoch != 0, "Validator is not disabled");
+        require(validators[oldValidatorId]._address != msg.sender, "Validator cannot redelegate");
         Unstaking storage us = validators[oldValidatorId].unstakings[msg.sender][unstakingId];
         require(us.amount >= amount, "Unstaking has less tokens");
         _stake(newValidatorId, amount, false);
