@@ -18,7 +18,7 @@ contract DelegatedStaking is Ownable, Initializable  {
     uint128 lastUpdateEpoch; // block # when the global exchange rate was updated last
     uint128 globalExchangeRate;
     uint128 validatorsN; // number of validators, used to get validator ids
-    mapping(uint=>Validator) validators; // id -> validator instance
+    mapping(uint128 => Validator) validators; // id -> validator instance
     IERC20 CQT;
 
     struct Staking {
