@@ -357,10 +357,10 @@ contract DelegatedStaking is Ownable, Initializable  {
     // can only be called by the owner or the validator, disabling will allow validator to fully unstake
     // validator instance can only be disabled once and can never be reenabled
     function disableValidator(uint128 validatorId) public {
+        require(validatorId < validatorsN, "Invalid validator");
         Validator storage v = validators[validatorId];
         require(v.disabledEpoch == 0, "Validator is already disabled");
         require(v._address == msg.sender || msg.sender == owner(), "Caller is not the owner or the validator");
-        require(validatorId < validatorsN, "Invalid validator");
         updateGlobalExchangeRate();
         updateValidator(v);
         v.disabledEpoch = uint128(block.number) < endEpoch? uint128(block.number) : endEpoch;
