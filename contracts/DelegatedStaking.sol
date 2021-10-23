@@ -357,7 +357,6 @@ contract DelegatedStaking is Ownable, Initializable  {
     // can only be called by the owner or the validator, disabling will allow validator to fully unstake
     // validator instance can only be disabled once and can never be reenabled
     function disableValidator(uint128 validatorId) public {
-        require(validatorId < validatorsN, "Invalid validator");
         Validator storage v = validators[validatorId];
         require(v.disabledEpoch == 0, "Validator is already disabled");
         require(v._address == msg.sender || msg.sender == owner(), "Caller is not the owner or the validator");
@@ -441,7 +440,7 @@ contract DelegatedStaking is Ownable, Initializable  {
     function getValidatorsDetails() public view returns (uint128[] memory commissionRates, uint128[] memory delegated) {
         commissionRates = new uint128[](validatorsN);
         delegated = new uint128[](validatorsN);
-        for (uint128 i = 0; i < validatorsN; i++){
+        for (uint128 i = 0; i < validatorsN; ++i){
             Validator storage v = validators[i];
             commissionRates[i] = v.commissionRate;
             delegated[i] = v.delegated - v.stakings[v._address].staked;
@@ -458,7 +457,7 @@ contract DelegatedStaking is Ownable, Initializable  {
        uint256 currentEpoch = block.number < endEpoch? block.number: endEpoch;
        uint128 newGlobalExchangeRate = uint128((uint256(allocatedTokensPerEpoch) * divider/totalGlobalShares)*(currentEpoch - lastUpdateEpoch)) + globalExchangeRate;
 
-        for (uint128 i = 0; i < validatorsN; i++){
+        for (uint128 i = 0; i < validatorsN; ++i){
             Validator storage v = validators[i];
             Staking storage s = v.stakings[delegator];
             delegated[i] = s.staked;
