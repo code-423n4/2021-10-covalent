@@ -430,9 +430,10 @@ contract DelegatedStaking is OwnableUpgradeable{
     // returns details of each validator
     // array index is id
     function getValidatorsDetails() public view returns (uint128[] memory commissionRates, uint128[] memory delegated) {
-        commissionRates = new uint128[](validatorsN);
-        delegated = new uint128[](validatorsN);
-        for (uint128 i = 0; i < validatorsN; ++i){
+        uint128 N = validatorsN;
+        commissionRates = new uint128[](N);
+        delegated = new uint128[](N);
+        for (uint128 i = 0; i < N; ++i){
             Validator storage v = validators[i];
             commissionRates[i] = v.commissionRate;
             delegated[i] = v.delegated - v.stakings[v._address].staked;
@@ -443,14 +444,15 @@ contract DelegatedStaking is OwnableUpgradeable{
     // this follows the same logic as _updateGlobalExchangeRate and _updateValidator
     // array index is id of validator
     function getDelegatorDetails(address delegator) public view returns( uint128[] memory delegated,  uint128[] memory rewardsAvailable, uint128[] memory commissionRewards) {
-       delegated = new uint128[](validatorsN);
-       rewardsAvailable = new uint128[](validatorsN);
-       commissionRewards = new uint128[](validatorsN);
+       uint128 N = validatorsN;
+       delegated = new uint128[](N);
+       rewardsAvailable = new uint128[](N);
+       commissionRewards = new uint128[](N);
        uint256 currentEpoch = block.number < endEpoch? block.number: endEpoch;
        uint128 newGlobalExchangeRate = uint128((uint256(allocatedTokensPerEpoch) * divider/totalGlobalShares)*(currentEpoch - lastUpdateEpoch)) + globalExchangeRate;
        Validator storage v;
        Staking storage s;
-        for (uint128 i = 0; i < validatorsN; ++i){
+        for (uint128 i = 0; i < N; ++i){
             v = validators[i];
             s = v.stakings[delegator];
             delegated[i] = s.staked;
