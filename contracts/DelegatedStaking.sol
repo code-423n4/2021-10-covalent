@@ -182,13 +182,14 @@ contract DelegatedStaking is OwnableUpgradeable{
         require(endEpoch > block.number, "Program ended");
         _updateGlobalExchangeRate();
         _updateValidator(v);
+        address vAddress = v._address;
         // if staker is validator who self delegates
-        if (msg.sender == v._address){
+        if (msg.sender == vAddress){
             require(amount + v.stakings[msg.sender].staked >= validatorMinStakedRequired, "Amount < min staked required");
         }
         else {
             // otherwise need to check for max cap
-            uint128 validatorStaked = v.stakings[v._address].staked;
+            uint128 validatorStaked = v.stakings[vAddress].staked;
             uint128 validatorMaxCap = validatorStaked * maxCapMultiplier;
             uint128 newDelegated = v.delegated - validatorStaked + amount;
             require(newDelegated <= validatorMaxCap, "Validator max capacity exceeded");
@@ -274,22 +275,23 @@ contract DelegatedStaking is OwnableUpgradeable{
         Validator storage v = validators[validatorId];
         _updateValidator(v);
         Staking storage s = v.stakings[msg.sender];
-
-        uint128 rewards = _sharesToTokens(s.shares, v.exchangeRate) - s.staked;
+        uint128 vExchangeRate = v.exchangeRate;
+        uint128 rewards = _sharesToTokens(s.shares, vExchangeRate) - s.staked;
         if(msg.sender == v._address){
+            uint128 commissionAvailableToRedeem = v.commissionAvailableToRedeem;
             if(amount == 0){
-                unchecked { amount = rewards + v.commissionAvailableToRedeem; }
+                unchecked { amount = rewards + commissionAvailableToRedeem; }
             }
-            require(rewards + v.commissionAvailableToRedeem >= amount, "Redeem amount > available");
+            require(rewards + commissionAvailableToRedeem >= amount, "Redeem amount > available");
             // first redeem rewards from commission
-            uint128 commissionLeftOver = amount < v.commissionAvailableToRedeem ? v.commissionAvailableToRedeem - amount : 0;
+            uint128 commissionLeftOver = amount < commissionAvailableToRedeem ? commissionAvailableToRedeem - amount : 0;
             // if there is more, redeem  it from regular rewards
             if (commissionLeftOver == 0){
-                uint128 validatorSharesRemove = _tokensToShares(amount - v.commissionAvailableToRedeem, v.exchangeRate);
+                uint128 validatorSharesRemove = _tokensToShares(amount - commissionAvailableToRedeem, vExchangeRate);
                 unchecked { s.shares -= validatorSharesRemove; }
                 unchecked { v.totalShares -= validatorSharesRemove; }
             }
-            emit CommissionRewardRedeemed(validatorId, beneficiary, v.commissionAvailableToRedeem - commissionLeftOver);
+            emit CommissionRewardRedeemed(validatorId, beneficiary, commissionAvailableToRedeem - commissionLeftOver);
             v.commissionAvailableToRedeem = commissionLeftOver;
         }
         else {
@@ -297,7 +299,7 @@ contract DelegatedStaking is OwnableUpgradeable{
                 amount = rewards;
             }
             require(rewards >= amount, "Redeem amount > available");
-            uint128 validatorSharesRemove = _tokensToShares(amount, v.exchangeRate);
+            uint128 validatorSharesRemove = _tokensToShares(amount, vExchangeRate);
             unchecked { s.shares -= validatorSharesRemove; }
             unchecked { v.totalShares -= validatorSharesRemove; }
         }
@@ -428,9 +430,10 @@ contract DelegatedStaking is OwnableUpgradeable{
     // returns details of each validator
     // array index is id
     function getValidatorsDetails() public view returns (uint128[] memory commissionRates, uint128[] memory delegated) {
-        commissionRates = new uint128[](validatorsN);
-        delegated = new uint128[](validatorsN);
-        for (uint128 i = 0; i < validatorsN; ++i){
+        uint128 N = validatorsN;
+        commissionRates = new uint128[](N);
+        delegated = new uint128[](N);
+        for (uint128 i = 0; i < N; ++i){
             Validator storage v = validators[i];
             commissionRates[i] = v.commissionRate;
             delegated[i] = v.delegated - v.stakings[v._address].staked;
@@ -441,14 +444,15 @@ contract DelegatedStaking is OwnableUpgradeable{
     // this follows the same logic as _updateGlobalExchangeRate and _updateValidator
     // array index is id of validator
     function getDelegatorDetails(address delegator) public view returns( uint128[] memory delegated,  uint128[] memory rewardsAvailable, uint128[] memory commissionRewards) {
-       delegated = new uint128[](validatorsN);
-       rewardsAvailable = new uint128[](validatorsN);
-       commissionRewards = new uint128[](validatorsN);
+       uint128 N = validatorsN;
+       delegated = new uint128[](N);
+       rewardsAvailable = new uint128[](N);
+       commissionRewards = new uint128[](N);
        uint256 currentEpoch = block.number < endEpoch? block.number: endEpoch;
        uint128 newGlobalExchangeRate = uint128((uint256(allocatedTokensPerEpoch) * divider/totalGlobalShares)*(currentEpoch - lastUpdateEpoch)) + globalExchangeRate;
        Validator storage v;
        Staking storage s;
-        for (uint128 i = 0; i < validatorsN; ++i){
+        for (uint128 i = 0; i < N; ++i){
             v = validators[i];
             s = v.stakings[delegator];
             delegated[i] = s.staked;
