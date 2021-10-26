@@ -182,13 +182,14 @@ contract DelegatedStaking is OwnableUpgradeable{
         require(endEpoch > block.number, "Program ended");
         _updateGlobalExchangeRate();
         _updateValidator(v);
+        address vAddress = v._address;
         // if staker is validator who self delegates
-        if (msg.sender == v._address){
+        if (msg.sender == vAddress){
             require(amount + v.stakings[msg.sender].staked >= validatorMinStakedRequired, "Amount < min staked required");
         }
         else {
             // otherwise need to check for max cap
-            uint128 validatorStaked = v.stakings[v._address].staked;
+            uint128 validatorStaked = v.stakings[vAddress].staked;
             uint128 validatorMaxCap = validatorStaked * maxCapMultiplier;
             uint128 newDelegated = v.delegated - validatorStaked + amount;
             require(newDelegated <= validatorMaxCap, "Validator max capacity exceeded");
@@ -274,22 +275,23 @@ contract DelegatedStaking is OwnableUpgradeable{
         Validator storage v = validators[validatorId];
         _updateValidator(v);
         Staking storage s = v.stakings[msg.sender];
-
-        uint128 rewards = _sharesToTokens(s.shares, v.exchangeRate) - s.staked;
+        uint128 vExchangeRate = v.exchangeRate;
+        uint128 rewards = _sharesToTokens(s.shares, vExchangeRate) - s.staked;
         if(msg.sender == v._address){
+            uint128 commissionAvailableToRedeem = v.commissionAvailableToRedeem;
             if(amount == 0){
-                unchecked { amount = rewards + v.commissionAvailableToRedeem; }
+                unchecked { amount = rewards + commissionAvailableToRedeem; }
             }
-            require(rewards + v.commissionAvailableToRedeem >= amount, "Redeem amount > available");
+            require(rewards + commissionAvailableToRedeem >= amount, "Redeem amount > available");
             // first redeem rewards from commission
-            uint128 commissionLeftOver = amount < v.commissionAvailableToRedeem ? v.commissionAvailableToRedeem - amount : 0;
+            uint128 commissionLeftOver = amount < commissionAvailableToRedeem ? commissionAvailableToRedeem - amount : 0;
             // if there is more, redeem  it from regular rewards
             if (commissionLeftOver == 0){
-                uint128 validatorSharesRemove = _tokensToShares(amount - v.commissionAvailableToRedeem, v.exchangeRate);
+                uint128 validatorSharesRemove = _tokensToShares(amount - commissionAvailableToRedeem, vExchangeRate);
                 unchecked { s.shares -= validatorSharesRemove; }
                 unchecked { v.totalShares -= validatorSharesRemove; }
             }
-            emit CommissionRewardRedeemed(validatorId, beneficiary, v.commissionAvailableToRedeem - commissionLeftOver);
+            emit CommissionRewardRedeemed(validatorId, beneficiary, commissionAvailableToRedeem - commissionLeftOver);
             v.commissionAvailableToRedeem = commissionLeftOver;
         }
         else {
@@ -297,7 +299,7 @@ contract DelegatedStaking is OwnableUpgradeable{
                 amount = rewards;
             }
             require(rewards >= amount, "Redeem amount > available");
-            uint128 validatorSharesRemove = _tokensToShares(amount, v.exchangeRate);
+            uint128 validatorSharesRemove = _tokensToShares(amount, vExchangeRate);
             unchecked { s.shares -= validatorSharesRemove; }
             unchecked { v.totalShares -= validatorSharesRemove; }
         }
