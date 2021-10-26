@@ -20,7 +20,7 @@ contract DelegatedStaking is OwnableUpgradeable{
     uint128 globalExchangeRate;
     uint128 validatorsN; // number of validators, used to get validator ids
     mapping(uint128 => Validator) validators; // id -> validator instance
-    IERC20Upgradeable CQT;
+    IERC20Upgradeable constant CQT = IERC20Upgradeable(0xD417144312DbF50465b1C641d016962017Ef6240);
 
     struct Staking {
         uint128 staked; // initial CQT amount staked
@@ -70,7 +70,6 @@ contract DelegatedStaking is OwnableUpgradeable{
         maxCapMultiplier = 10;
         allocatedTokensPerEpoch = 1*10**18; // should never be 0
         globalExchangeRate = 10**18; // 1 to 1
-        CQT = IERC20Upgradeable(0xD417144312DbF50465b1C641d016962017Ef6240);
         emit Initialized(minStakedRequired, validatorCoolDown, delegatorCoolDown, maxCapMultiplier, allocatedTokensPerEpoch, globalExchangeRate);
     }
 
